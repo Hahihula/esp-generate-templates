@@ -1,0 +1,30 @@
+# The esp-generate template manifest.
+#
+# This file decides *which* files a generated project gets; `template.yaml` (the
+# option tree) decides what is *in* them.
+
+sdk_version = "0.1.0"
+
+name = "ESP32-C6 Touch LCD"
+description = "no_std template for the Waveshare ESP32-C6 Touch LCD board"
+
+# Versioned vocabularies this template depends on. This template hand-authors
+# its own (single-chip) selection group rather than including `plugin:chip`,
+# but it still needs the plugin for the `chip.…` facts it interpolates —
+# `chip.rust_target`, `chip.name`, `chip.dram2_uninit_size`.
+plugins = { chip = "0.4.0" }
+
+# Files whose emission is conditional, or whose output path differs from their
+# source path. Anything not listed is emitted as-is.
+#
+# `when` is a somni condition over the same facts a file body sees; `as` is
+# ordinary template text.
+emit = [
+  { path = ".github/workflows/rust_ci.yml", when = 'option("ci")' },
+  { path = "diagram.json",                  when = 'option("wokwi")' },
+  { path = "src/bin/async_main.rs",         when = 'option("embassy")',  as = "src/bin/main.rs" },
+  { path = "src/bin/main.rs",               when = '!option("embassy")' },
+  { path = "tests/async_hello_test.rs",     when = 'option("embassy") && option("embedded-test")',  as = "tests/hello_test.rs" },
+  { path = "tests/hello_test.rs",           when = '!option("embassy") && option("embedded-test")' },
+  { path = "wokwi.toml",                    when = 'option("wokwi")' },
+]

@@ -1,14 +1,33 @@
-#INCLUDEFILE false
+required:
+  - chip
 options:
+  # This board is ESP32-C6, so the chip group offers exactly that rather than
+  # `!Include plugin:chip`, which would offer every chip esp-generate knows.
+  - !Category
+    name: chip
+    display_name: Chip selection
+    options:
+      - !Option
+        name: esp32c6
+        display_name: ESP32-C6
+        selection_group: chip
+
   - !Category
     name: module
     display_name: Module/Board selection
-    help: Select your specific ESP32 module. This selection is optional, but it will generate code to help you avoid using reserved GPIOs.
+    help: Select your board so the generated code avoids GPIOs it reserves.
     options:
       - !Option
-        name: PLACEHOLDER
-        display_name: "<dynamic - will be replaced at runtime>"
+        name: esp32-c6-touch-lcd-1_47
+        display_name: Waveshare ESP32-C6 Touch LCD 1.47
         selection_group: module
+        compatible:
+          chip:
+            - esp32c6
+        # To have the generator reserve this board's GPIOs, add the limitation
+        # tags it uses, e.g. `sets: { remove_pins: [spi_flash] }`. Note that on
+        # the ESP32-C6 those pins are only `Peripherals` fields from esp-hal
+        # 1.1 onwards; this template pins `~1.0`.
 
   - !Option
     name: unstable-hal
@@ -28,13 +47,14 @@ options:
     requires:
       - alloc
       - unstable-hal
-    chips:
-      - esp32
-      - esp32c2
-      - esp32c3
-      - esp32c6
-      - esp32s2
-      - esp32s3
+    compatible:
+      chip:
+        - esp32
+        - esp32c2
+        - esp32c3
+        - esp32c6
+        - esp32s2
+        - esp32s3
 
   - !Option
     name: ble-bleps
@@ -44,13 +64,14 @@ options:
     requires:
       - alloc
       - unstable-hal
-    chips:
-      - esp32
-      - esp32c2
-      - esp32c3
-      - esp32c6
-      - esp32h2
-      - esp32s3
+    compatible:
+      chip:
+        - esp32
+        - esp32c2
+        - esp32c3
+        - esp32c6
+        - esp32h2
+        - esp32s3
 
   - !Option
     name: ble-trouble
@@ -61,13 +82,14 @@ options:
       - alloc
       - unstable-hal
       - embassy
-    chips:
-      - esp32
-      - esp32c2
-      - esp32c3
-      - esp32c6
-      - esp32h2
-      - esp32s3
+    compatible:
+      chip:
+        - esp32
+        - esp32c2
+        - esp32c3
+        - esp32c6
+        - esp32h2
+        - esp32s3
 
   - !Option
     name: embassy
@@ -80,22 +102,26 @@ options:
   - !Option
     name: stack-smashing-protection
     display_name: Enable stack smashing protection.
+    requires_nightly: true
     help: Requires nightly Rust. Note that this option generates additional checks in most functions
       and will slow down your code.
 
   - !Option
     name: probe-rs
+    requires_tools: [probe-rs]
     display_name: Use probe-rs to flash and monitor instead of espflash.
     help: probe-rs is a debugger that connects to the chips over JTAG. It can be used to flash and
       monitor, and it can also be used to interactively debug an application, or run tests on the
       hardware. Semihosting or RTT-based technologies like defmt-rtt require probe-rs.
-    chips:
-      - esp32c6
-      - esp32h2
-      - esp32s3
+    compatible:
+      chip:
+        - esp32c6
+        - esp32h2
+        - esp32s3
 
   - !Option
     name: probe-rs
+    requires_tools: [probe-rs]
     display_name: Use probe-rs to flash and monitor instead of espflash.
     help: probe-rs is a debugger that connects to the chips over JTAG. It can be used to flash and
       monitor, and it can also be used to interactively debug an application, or run tests on the
@@ -103,11 +129,12 @@ options:
 
       probe-rs requires a debug probe like esp-prog, and will not work with USB-UART adapters that
       often come on development boards.
-    chips:
-      - esp32
-      - esp32s2
-      - esp32c2
-      - esp32c3
+    compatible:
+      chip:
+        - esp32
+        - esp32s2
+        - esp32c2
+        - esp32c3
 
   - !Category
     name: flashing-probe-rs
@@ -161,13 +188,14 @@ options:
       - !Option
         name: wokwi
         display_name: Add support for Wokwi simulation using VS Code Wokwi extension.
-        chips:
-          - esp32
-          - esp32c3
-          - esp32c6
-          - esp32h2
-          - esp32s2
-          - esp32s3
+        compatible:
+          chip:
+            - esp32
+            - esp32c3
+            - esp32c6
+            - esp32h2
+            - esp32s2
+            - esp32s3
 
       - !Option
         name: ci
@@ -177,8 +205,6 @@ options:
     name: esp32c6-peripherals
     display_name: ESP32-C6 Peripherals
     help: "ESP32-C6 specific peripheral options for the Touch LCD board."
-    chips:
-      - esp32c6
     options:
       - !Option
         name: display
@@ -187,6 +213,9 @@ options:
           Requires embassy for async time operations."
         requires:
           - embassy
+        compatible:
+          chip:
+            - esp32c6
 
       - !Option
         name: touch
@@ -195,6 +224,9 @@ options:
         requires:
           - embassy
           - display
+        compatible:
+          chip:
+            - esp32c6
 
       - !Option
         name: imu
@@ -202,11 +234,17 @@ options:
         help: "Add support for the QMI8658 IMU sensor via I2C. Requires embassy."
         requires:
           - embassy
+        compatible:
+          chip:
+            - esp32c6
 
       - !Option
         name: temp-sensor
         display_name: Temperature sensor support.
         help: "Add support for the ESP32-C6 built-in temperature sensor."
+        compatible:
+          chip:
+            - esp32c6
 
       - !Option
         name: demo
@@ -218,6 +256,10 @@ options:
           - touch
           - imu
           - temp-sensor
+        compatible:
+          chip:
+            - esp32c6
+
 
   - !Category
     name: editor
@@ -244,6 +286,6 @@ options:
     display_name: Rust toolchain
     options:
       - !Option
-        name:
+        name: ""
         display_name: "Scanning installed toolchains..."
         selection_group: toolchain
