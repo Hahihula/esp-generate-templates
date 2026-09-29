@@ -1,5 +1,3 @@
-//INCLUDEFILE option("embassy")
-//INCLUDE_AS src/bin/main.rs
 #![no_std]
 #![no_main]
 #![deny(
@@ -12,69 +10,69 @@
 use esp_hal::clock::CpuClock;
 use esp_hal::timer::timg::TimerGroup;
 
-//IF option("ble-trouble") || option("ble-bleps")
+//%if option("ble-trouble") || option("ble-bleps")
 use esp_radio::ble::controller::BleConnector;
-//ENDIF
-//IF option("ble-trouble")
+//%endif
+//%if option("ble-trouble")
 use bt_hci::controller::ExternalController;
 use trouble_host::prelude::*;
-//ENDIF
+//%endif
 
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 
-//IF option("defmt")
-//IF !option("probe-rs")
+//%if option("defmt")
+//%if !option("probe-rs")
 //+use esp_println as _;
-//ENDIF
+//%endif
 //+use defmt::info;
-//IF !option("panic-handler")
+//%if !group_selected("panic-handler")
 //+use defmt::error;
-//ENDIF !option("panic-handler")
-//ELIF option("log")
+//%endif !group_selected("panic-handler")
+//%else if option("log")
 use log::info;
-//IF !option("panic-handler")
+//%if !group_selected("panic-handler")
 use log::error;
-//ENDIF !option("panic-handler")
-//ELIF option("probe-rs") // without defmt
+//%endif !group_selected("panic-handler")
+//%else if option("probe-rs")
 //+use rtt_target::rprintln;
-//ENDIF !defmt
+//%endif !defmt
 
-//IF !option("panic-handler")
-//IF option("defmt") || option("log")
+//%if !group_selected("panic-handler")
+//%if option("defmt") || option("log")
 //+#[panic_handler]
 //+fn panic(panic_info: &core::panic::PanicInfo) -> ! {
 //+    error!("{}", panic_info);
 //+    loop {}
 //+}
-//ELIF option("probe-rs")
+//%else if option("probe-rs")
 //+#[panic_handler]
 //+fn panic(panic_info: &core::panic::PanicInfo) -> ! {
 //+    rprintln!("{}", panic_info);
 //+    loop {}
 //+}
-//ELSE
+//%else
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {}
 }
-//ENDIF
-//ELIF option("esp-backtrace")
+//%endif
+//%else if option("esp-backtrace")
 //+use esp_backtrace as _;
-//ELIF option("panic-rtt-target")
+//%else if option("panic-rtt-target")
 //+use panic_rtt_target as _;
-//ENDIF
+//%endif
 
-//IF option("alloc")
+//%if option("alloc")
 extern crate alloc;
-//ENDIF
+//%endif
 
-//IF option("ble-trouble")
+//%if option("ble-trouble")
 const CONNECTIONS_MAX: usize = 1;
 const L2CAP_CHANNELS_MAX: usize = 1;
-//ENDIF
+//%endif
 
-//IF option("display") || option("demo")
+//%if option("display") || option("demo")
 //+use core::fmt::Write;
 //+use embedded_graphics::{
 //+    pixelcolor::Rgb565,
@@ -91,24 +89,24 @@ const L2CAP_CHANNELS_MAX: usize = 1;
 //+#[path = "../ferris_bitmap.rs"]
 //+mod ferris_bitmap;
 //+use crate::ferris_bitmap::{QR_CODE, QR_WIDTH, QR_HEIGHT, QR_BYTES_PER_ROW, FERRIS_DATA, FERRIS_WIDTH, FERRIS_HEIGHT};
-//ENDIF
+//%endif
 
-//IF option("touch") || option("imu") || option("demo")
+//%if option("touch") || option("imu") || option("demo")
 //+use embedded_hal_bus::i2c::RefCellDevice;
 //+use core::cell::RefCell;
 //+use embedded_hal::i2c::I2c;
 //+use esp_hal::i2c::master::I2c as I2cMaster;
-//ENDIF
+//%endif
 
-//IF option("touch")
+//%if option("touch")
 //+use axs5106l::{Axs5106l, Rotation};
-//ENDIF
+//%endif
 
-//IF option("temp-sensor") || option("demo")
+//%if option("temp-sensor") || option("demo")
 //+use esp_hal::tsens::{TemperatureSensor, Config};
-//ENDIF
+//%endif
 
-//IF option("display") || option("demo")
+//%if option("display") || option("demo")
 //+const LCD_CMD_SLPOUT: u8 = 0x11;
 //+const LCD_CMD_DISPON: u8 = 0x29;
 //+const LCD_CMD_MADCTL: u8 = 0x36;
@@ -342,7 +340,7 @@ const L2CAP_CHANNELS_MAX: usize = 1;
 //+        }
 //+    }
 //+}
-//ENDIF
+//%endif
 
 // This creates a default app-descriptor required by the esp-idf bootloader.
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
@@ -351,49 +349,45 @@ esp_bootloader_esp_idf::esp_app_desc!();
 #[allow(clippy::large_stack_frames)]
 #[esp_rtos::main]
 async fn main(spawner: Spawner) -> ! {
-    //REPLACE generate-version generate-version
-    // generator version: generate-version
-    //REPLACE generate-parameters generate-parameters
-    // generator parameters: generate-parameters
+    // generator version: {{ generate_version }}
+    // generator parameters: {{ generate_parameters }}
 
-    //IF option("probe-rs")
-    //IF option("defmt")
+    //%if option("probe-rs")
+    //%if option("defmt")
     rtt_target::rtt_init_defmt!();
-    //ELSE
+    //%else
     rtt_target::rtt_init_print!();
-    //ENDIF
-    //ELIF option("log")
+    //%endif
+    //%else if option("log")
     esp_println::logger::init_logger_from_env();
-    //ENDIF
+    //%endif
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
 
-    //IF option("module-selected")
+    //%if has_reserved_pins
     // Reserved GPIOs - directly connected to flash/PSRAM
-    //REPLACE __RESERVED_GPIO_CODE__ reserved_gpio_code
-    __RESERVED_GPIO_CODE__
-    //ENDIF
+    {{ reserved_gpio_code }}
+    //%endif
 
-    //IF option("alloc")
-    //REPLACE 65536 max-dram2-uninit
-    esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 65536);
-    //IF option("wifi") && (option("ble-bleps") || option("ble-trouble"))
+    //%if option("alloc")
+    esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: {{ str(chip.dram2_uninit_size) }});
+    //%if option("wifi") && (option("ble-bleps") || option("ble-trouble"))
     // COEX needs more RAM - so we've added some more
     esp_alloc::heap_allocator!(size: 64 * 1024);
-    //ENDIF
-    //ENDIF alloc
+    //%endif
+    //%endif alloc
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
-    //IF option("esp32") || option("esp32s2") || option("esp32s3")
+    //%if chip.name == "esp32" || chip.name == "esp32s2" || chip.name == "esp32s3"
     esp_rtos::start(timg0.timer0);
-    //ELSE
+    //%else
     let sw_interrupt =
         esp_hal::interrupt::software::SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
     esp_rtos::start(timg0.timer0, sw_interrupt.software_interrupt0);
-    //ENDIF
+    //%endif
 
-    //IF option("display")
+    //%if option("display")
     let mut spi = Spi::new(
         peripherals.SPI2,
         esp_hal::spi::master::Config::default()
@@ -411,9 +405,9 @@ async fn main(spawner: Spawner) -> ! {
     backlight.set_high();
 
     lcd_init(&mut spi, &mut cs, &mut dc, &mut rst, &mut esp_hal::delay::Delay::new());
-    //ENDIF
+    //%endif
 
-    //IF option("touch") || option("imu") || option("demo")
+    //%if option("touch") || option("imu") || option("demo")
     let i2c0 = I2cMaster::new(
         peripherals.I2C0,
         esp_hal::i2c::master::Config::default().with_frequency(Rate::from_khz(400)),
@@ -423,31 +417,31 @@ async fn main(spawner: Spawner) -> ! {
     .with_scl(peripherals.GPIO19);
 
     let i2c0_refcell = RefCell::new(i2c0);
-    //ENDIF
+    //%endif
 
-    //IF option("touch") || option("demo")
+    //%if option("touch") || option("demo")
     let touch_i2c = RefCellDevice::new(&i2c0_refcell);
     let touch_rst = Output::new(peripherals.GPIO20, Level::High, OutputConfig::default());
     let mut touch = Axs5106l::new(touch_i2c, touch_rst, DISPLAY_WIDTH, DISPLAY_HEIGHT, Rotation::Rotate0);
     match touch.init(&mut esp_hal::delay::Delay::new()) {
         Ok(_) => {
-            //IF option("defmt") || option("log")
+            //%if option("defmt") || option("log")
             info!("Touch initialized successfully!");
-            //ELIF option("probe-rs")
+            //%else if option("probe-rs")
             //+rprintln!("Touch initialized successfully!");
-            //ENDIF
+            //%endif
         }
         Err(e) => {
-            //IF option("defmt") || option("log")
+            //%if option("defmt") || option("log")
             info!("Touch init error: {:?}", e);
-            //ELIF option("probe-rs")
+            //%else if option("probe-rs")
             //+rprintln!("Touch init error: {:?}", e);
-            //ENDIF
+            //%endif
         }
     }
-    //ENDIF
+    //%endif
 
-    //IF option("imu") || option("demo")
+    //%if option("imu") || option("demo")
     let mut imu_i2c = RefCellDevice::new(&i2c0_refcell);
     const IMU_ADDR: u8 = 0x6B;
     imu_i2c.write(IMU_ADDR, &[0x60, 0xB0]).ok();
@@ -456,27 +450,27 @@ async fn main(spawner: Spawner) -> ! {
     imu_i2c.write(IMU_ADDR, &[0x08, 0x03]).ok();
     imu_i2c.write(IMU_ADDR, &[0x03, 0x15]).ok();
     imu_i2c.write(IMU_ADDR, &[0x04, 0x55]).ok();
-    //IF option("defmt") || option("log")
+    //%if option("defmt") || option("log")
     info!("IMU initialized at 0x{:02X}!", IMU_ADDR);
-    //ELIF option("probe-rs")
+    //%else if option("probe-rs")
     //+rprintln!("IMU initialized at 0x{:02X}!", IMU_ADDR);
-    //ENDIF
-    //ENDIF
+    //%endif
+    //%endif
 
-    //IF option("temp-sensor") || option("demo")
+    //%if option("temp-sensor") || option("demo")
     let temp_sensor = TemperatureSensor::new(peripherals.TSENS, Config::default()).unwrap();
-    //IF option("defmt") || option("log")
+    //%if option("defmt") || option("log")
     info!("Temperature sensor initialized");
-    //ELIF option("probe-rs")
+    //%else if option("probe-rs")
     //+rprintln!("Temperature sensor initialized");
-    //ENDIF
-    //ENDIF
+    //%endif
+    //%endif
 
-    //IF option("display")
+    //%if option("display")
     let mut fb = FrameBuffer::new();
-    //ENDIF
+    //%endif
 
-    //IF option("demo")
+    //%if option("demo")
     let button = esp_hal::gpio::Input::new(
         peripherals.GPIO9,
         esp_hal::gpio::InputConfig::default().with_pull(esp_hal::gpio::Pull::Up),
@@ -504,35 +498,35 @@ async fn main(spawner: Spawner) -> ! {
     Text::new("Push button for", Point::new(25, 280), text_style).draw(&mut fb).ok();
     Text::new("IMU demo ->", Point::new(35, 295), text_style).draw(&mut fb).ok();
     lcd_draw_framebuffer(&mut spi, &mut cs, &mut dc, fb.as_slice());
-    //ENDIF
+    //%endif
 
-    //IF option("defmt") || option("log")
+    //%if option("defmt") || option("log")
     info!("Embassy initialized!");
-    //ELIF option("probe-rs")
+    //%else if option("probe-rs")
     //+rprintln!("Embassy initialized!");
-    //ENDIF
+    //%endif
 
-    //IF option("ble-trouble") || option("ble-bleps") || option("wifi")
+    //%if option("ble-trouble") || option("ble-bleps") || option("wifi")
     let radio_init = esp_radio::init().expect("Failed to initialize Wi-Fi/BLE controller");
-    //ENDIF
-    //IF option("wifi")
+    //%endif
+    //%if option("wifi")
     let (mut _wifi_controller, _interfaces) =
         esp_radio::wifi::new(&radio_init, peripherals.WIFI, Default::default())
             .expect("Failed to initialize Wi-Fi controller");
-    //ENDIF
-    //IF option("ble-trouble")
+    //%endif
+    //%if option("ble-trouble")
     let transport = BleConnector::new(&radio_init, peripherals.BT, Default::default()).unwrap();
     let ble_controller = ExternalController::<_, 1>::new(transport);
     let mut resources: HostResources<DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX> =
         HostResources::new();
     let _stack = trouble_host::new(ble_controller, &mut resources);
-    //ELIF option("ble-bleps")
+    //%else if option("ble-bleps")
     let _connector = BleConnector::new(&radio_init, peripherals.BT, Default::default());
-    //ENDIF
+    //%endif
 
     let _ = spawner;
 
-    //IF option("demo")
+    //%if option("demo")
     loop {
         if button.is_low() && !button_pressed {
             button_pressed = true;
@@ -545,18 +539,18 @@ async fn main(spawner: Spawner) -> ! {
                     Text::new("Touch the screen!", Point::new(30, 100), text_style).draw(&mut fb).ok();
                     Text::new("Push button for", Point::new(25, 280), text_style).draw(&mut fb).ok();
                     Text::new("IMU demo ->", Point::new(35, 295), text_style).draw(&mut fb).ok();
-                    //IF option("defmt") || option("log")
+                    //%if option("defmt") || option("log")
                     info!("Switched to touch page");
-                    //ELIF option("probe-rs")
+                    //%else if option("probe-rs")
                     //+rprintln!("Switched to touch page");
-                    //ENDIF
+                    //%endif
                 }
                 1 => {
-                    //IF option("defmt") || option("log")
+                    //%if option("defmt") || option("log")
                     info!("Switched to IMU page");
-                    //ELIF option("probe-rs")
+                    //%else if option("probe-rs")
                     //+rprintln!("Switched to IMU page");
-                    //ENDIF
+                    //%endif
                 }
                 2 => {
                     temperature = temp_sensor.get_temperature().to_celsius();
@@ -576,11 +570,11 @@ async fn main(spawner: Spawner) -> ! {
                     Text::new("Sensors:", Point::new(10, 250), text_style).draw(&mut fb).ok();
                     Text::new("  Touch: AXS5106L", Point::new(10, 270), text_style).draw(&mut fb).ok();
                     Text::new("  IMU: QMI8658", Point::new(10, 290), text_style).draw(&mut fb).ok();
-                    //IF option("defmt") || option("log")
+                    //%if option("defmt") || option("log")
                     info!("Switched to system page");
-                    //ELIF option("probe-rs")
+                    //%else if option("probe-rs")
                     //+rprintln!("Switched to system page");
-                    //ENDIF
+                    //%endif
                 }
                 3 => {
                     fb.clear(Rgb565::WHITE);
@@ -591,11 +585,11 @@ async fn main(spawner: Spawner) -> ! {
                     Text::new("GitHub repo!", Point::new(50, 285), text_style).draw(&mut fb).ok();
                     Text::new("Push button", Point::new(30, 305), text_style).draw(&mut fb).ok();
                     Text::new("for touch demo", Point::new(25, 315), text_style).draw(&mut fb).ok();
-                    //IF option("defmt") || option("log")
+                    //%if option("defmt") || option("log")
                     info!("Switched to about page");
-                    //ELIF option("probe-rs")
+                    //%else if option("probe-rs")
                     //+rprintln!("Switched to about page");
-                    //ENDIF
+                    //%endif
                 }
                 _ => {}
             }
@@ -669,17 +663,16 @@ async fn main(spawner: Spawner) -> ! {
 
         Timer::after(Duration::from_millis(50)).await;
     }
-    //ELSE
+    //%else
     loop {
-        //IF option("defmt") || option("log")
+        //%if option("defmt") || option("log")
         info!("Hello world!");
-        //ELIF option("probe-rs")
+        //%else if option("probe-rs")
         rprintln!("Hello world!");
-        //ENDIF
+        //%endif
         Timer::after(Duration::from_secs(1)).await;
     }
-    //ENDIF demo
+    //%endif demo
 
-    //REPLACE {current-version} esp-hal-version-full
-    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v{current-version}/examples
+    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v{{ esp_hal_version_full }}/examples
 }

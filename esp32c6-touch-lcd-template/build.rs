@@ -1,11 +1,11 @@
 fn main() {
     linker_be_nice();
-    //IF option("embedded-test")
+    //%if option("embedded-test")
     println!("cargo:rustc-link-arg-tests=-Tembedded-test.x");
-    //ENDIF
-    //IF option("defmt")
+    //%endif
+    //%if option("defmt")
     println!("cargo:rustc-link-arg=-Tdefmt.x");
-    //ENDIF
+    //%endif
     // make sure linkall.x is the last linker script (otherwise might cause problems with flip-link)
     println!("cargo:rustc-link-arg=-Tlinkall.x");
 }
@@ -69,15 +69,15 @@ fn linker_be_nice() {
         std::process::exit(0);
     }
 
-    //IF option("xtensa")
+    //%if chip.xtensa
     println!(
         "cargo:rustc-link-arg=-Wl,--error-handling-script={}",
         std::env::current_exe().unwrap().display()
     );
-    //ELIF option("riscv")
+    //%else if chip.riscv
     println!(
         "cargo:rustc-link-arg=--error-handling-script={}",
         std::env::current_exe().unwrap().display()
     );
-    //ENDIF
+    //%endif
 }
