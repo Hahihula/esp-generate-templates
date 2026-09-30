@@ -12,7 +12,7 @@ description = "no_std template for the Waveshare ESP32-C6 Touch LCD board"
 # its own (single-chip) selection group rather than including `plugin:chip`,
 # but it still needs the plugin for the `chip.…` facts it interpolates —
 # `chip.rust_target`, `chip.name`, `chip.dram2_uninit_size`.
-plugins = { chip = "0.4.0" }
+plugins = { chip = "0.5.0" }
 
 # Files whose emission is conditional, or whose output path differs from their
 # source path. Anything not listed is emitted as-is.
